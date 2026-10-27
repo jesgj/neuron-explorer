@@ -657,7 +657,7 @@ function renderExamples(u) {
   for (const d of doses) h += `<div class="h ${d > 0 ? "up" : "down"}">${fmtDose(d)}<span class="dim"> · ${relOf(d)}</span></div>`;
   for (const p of prompts) {
     const b = u.baselines.find(r => r.prompt === p);
-    h += `<div class="h">${p}</div><div class="cell base${b?.finish === "length" ? " capped" : ""}">${esc(b?.text ?? "")}</div>`;
+    h += `<div class="h">${esc(p)}</div><div class="cell base${b?.finish === "length" ? " capped" : ""}">${esc(b?.text ?? "")}</div>`;
     const mine = u.rollouts.filter(r => r.prompt === p);
     const shared = doses.map(d => mine.find(r => r.dose === d));
     const extra = mine.filter(r => !doses.includes(r.dose));
@@ -676,9 +676,9 @@ function renderDetails(u) {
   let h = "";
   if (s) {
     h += `<div class="lab">words</div><div class="crumbs">` + s.words.map(([w, c, z]) =>
-      `<span class="tok" title="${c} rollouts · z ${z.toFixed(1)} · ${esc((s.per_prompt[w] || []).join(" "))}">${esc(w)}</span>`).join("") + `</div>`;
+      `<span class="tok" title="${esc(c)} rollouts · z ${z.toFixed(1)} · ${esc((s.per_prompt[w] || []).join(" "))}">${esc(w)}</span>`).join("") + `</div>`;
     h += `<table class="dtable"><tr><th class="num">dose</th><th class="num">push</th><th class="num">distinct-4</th><th class="num">capped</th><th class="num">logprob</th></tr>` +
-      Object.entries(s.dose).map(([d, v]) => `<tr><td class="num">${d}</td><td class="num">${v.rel_push.toFixed(2)}</td><td class="num">${v.distinct4.toFixed(2)}</td><td class="num">${(v.capped * 100).toFixed(0)}%</td><td class="num">${v.logprob.toFixed(2)}</td></tr>`).join("") + `</table>`;
+      Object.entries(s.dose).map(([d, v]) => `<tr><td class="num">${esc(d)}</td><td class="num">${v.rel_push.toFixed(2)}</td><td class="num">${v.distinct4.toFixed(2)}</td><td class="num">${(v.capped * 100).toFixed(0)}%</td><td class="num">${v.logprob.toFixed(2)}</td></tr>`).join("") + `</table>`;
   }
   h += `<div id="d-lens" class="slot">—</div><div class="lab" style="margin-top:18px">connections</div><div id="d-con" class="slot">—</div>`;
   $("#tab-details").innerHTML = h;
@@ -1152,7 +1152,7 @@ async function togglePast() {
   th.innerHTML = `<div class="dim">…</div>`;
   const list = await api("/api/agent/chats");
   if (pastStash === null) return;
-  th.innerHTML = list.length ? list.map(c => `<button class="a-pastrow${c.chat === agent.chat ? " on" : ""}" data-chat="${c.chat}" data-agent="${c.agent || "claude"}"><span class="t">${esc(c.title || "—")}</span><span class="m">${c.agent === "codex" ? "codex · " : ""}${ago(c.t)} · ${c.turns} message${c.turns === 1 ? "" : "s"}</span></button>`).join("")
+  th.innerHTML = list.length ? list.map(c => `<button class="a-pastrow${c.chat === agent.chat ? " on" : ""}" data-chat="${esc(c.chat)}" data-agent="${esc(c.agent || "claude")}"><span class="t">${esc(c.title || "—")}</span><span class="m">${c.agent === "codex" ? "codex · " : ""}${ago(c.t)} · ${esc(c.turns)} message${c.turns === 1 ? "" : "s"}</span></button>`).join("")
     : `<div class="dim">—</div>`;
 }
 async function openPast(chat, kind) {

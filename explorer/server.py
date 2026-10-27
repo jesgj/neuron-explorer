@@ -48,7 +48,8 @@ async def local_only(request, call_next):
     if (request.headers.get("host") not in LOCAL_HOSTS
             or (origin and urlparse(origin).netloc not in LOCAL_HOSTS)
             or (request.headers.get("sec-fetch-site") in ("cross-site", "same-site")
-                and not (request.method == "GET" and request.headers.get("sec-fetch-mode") == "navigate"))):
+                and not (request.method == "GET" and request.headers.get("sec-fetch-mode") == "navigate"
+                         and request.url.path != "/api" and not request.url.path.startswith("/api/")))):
         return PlainTextResponse("forbidden", status_code=403)
     return await call_next(request)
 
@@ -340,7 +341,7 @@ async def fires(text: str, limit: int = 300, chat: bool = False):
     if not os.path.exists(ACT_SCALE):
         return {"ready": False, "results": []}
     sc = np.load(ACT_SCALE)
-    ids = await asyncio.to_thread(rt.chat_ids if chat else (lambda t: rt.tok(t).input_ids), text)
+    ids = (await asyncio.to_thread(rt.chat_ids if chat else (lambda t: rt.tok(t).input_ids), text))[:MAX_INFER_TOKENS]
     acts = await asyncio.to_thread(rt.all_activations, ids)
     toks = [rt.tok.decode([t]) for t in ids]
     cand = []
@@ -1213,8 +1214,12 @@ async def _stop_turn(proc):
 
 
 def _session_file(sid):
-    hits = glob.glob(os.path.join(os.path.expanduser("~/.claude/projects"), "*", f"{os.path.basename(sid)}.jsonl"))
-    return hits[0] if hits else None
+    if not isinstance(sid, str) or not sid or sid != os.path.basename(sid) or any(c in sid for c in "*?[]\\\0"):
+        return None
+    path = os.path.join(AGENT_SESSIONS, f"{sid}.jsonl")
+    if os.path.dirname(os.path.realpath(path)) != os.path.realpath(AGENT_SESSIONS):
+        return None
+    return path if os.path.isfile(path) else None
 
 
 def _user_text(m):
